@@ -1,5 +1,12 @@
+
+
 pipeline {
+
     agent any
+
+     tools {
+        maven 'Maven3'
+    }
 
     parameters {
         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git Branch Name')
