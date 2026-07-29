@@ -1,71 +1,62 @@
-
-
 pipeline {
 
     agent any
 
-     tools {
+    tools {
         maven 'Maven3'
     }
 
-    parameters {
-        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git Branch Name')
-        string(name: 'APP_VERSION', defaultValue: '1.0', description: 'Application Version')
-    }
-
     environment {
-        BUILD_DIR = "target"
-        ARTIFACT_NAME = "demo-${params.APP_VERSION}.jar"
+        IMAGE_NAME = "maven-app"
+        IMAGE_TAG = "latest"
+        CONTAINER_NAME = "maven-container"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('Checkout Source Code') {
             steps {
-                git branch: "${params.GIT_BRANCH}",
+                git branch: 'main',
                     url: 'https://github.com/VisheshRaj11/Ci_cd1.git'
             }
         }
 
-        stage('Build') {
+        stage('Install Dependencies') {
             steps {
-                sh 'mvn clean compile'
+                sh 'mvn clean install'
             }
         }
 
-        stage('Unit Testing') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-
-        stage('Code Quality Check') {
-            steps {
-                sh 'mvn verify'
-            }
-        }
-
-        stage('Package') {
+        stage('Build Application') {
             steps {
                 sh 'mvn package'
             }
         }
 
-        stage('Archive Artifact') {
+        stage('Build Docker Image') {
             steps {
-                archiveArtifacts artifacts: 'target/*.jar',
-                                 fingerprint: true
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                sh '''
+                docker stop ${CONTAINER_NAME} || true
+                docker rm ${CONTAINER_NAME} || true
+                docker run -d --name ${CONTAINER_NAME} ${IMAGE_NAME}:${IMAGE_TAG}
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "Build Successful"
+            echo "Application deployed successfully!"
         }
 
         failure {
-            echo "Build Failed"
+            echo "Deployment failed!"
         }
     }
 }
