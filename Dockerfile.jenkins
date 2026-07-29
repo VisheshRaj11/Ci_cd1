@@ -3,8 +3,11 @@ FROM jenkins/jenkins:lts
 USER root
 
 RUN apt-get update && \
-    apt-get install -y docker.io && \
-    groupadd -f docker && \
-    usermod -aG docker jenkins
+    apt-get install -y docker.io
+
+# Make docker group use the same GID as the mounted socket
+RUN groupmod -g 1001 docker || groupadd -g 1001 docker
+
+RUN usermod -aG docker jenkins
 
 USER jenkins
